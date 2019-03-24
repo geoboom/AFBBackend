@@ -1,15 +1,15 @@
 const express = require('express');
 
 const {
-  reset,
-  check,
-  redeem
+  getTrips,
+  initializeTrips,
+  setTripStatus,
 } = require('../controllers/trip');
 
 const router = express.Router();
 
-router.get('/check', check);
-router.get('/reset', reset);
-router.get('/redeem', redeem);
+router.get('/', getTrips);
+router.post('/initialize', initializeTrips);
+router.post('/setStatus', setTripStatus);
 
 module.exports = router;

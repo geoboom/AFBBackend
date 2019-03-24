@@ -1,28 +1,31 @@
-const { users } = require('../constants/index');
+const jwt = require('jsonwebtoken');
 
-const loginPost = (req, res, next) => {
-  const { username, password } = req.body;
+const { JWT_OPTIONS } = require('../config/jwt');
+const User = require('../models/user');
+const constants = require('../constants');
 
-  for (let i = 0; i < users.length; i += 1) {
-    const user = users[i];
-    if (
-      user.username === username
-      && user.password === password
-    ) {
-      return res.json(
-        {
-          username,
-          type: user.type,
-        },
-      );
-    }
+const signupPost = async (req, res, next) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.createAccount(username, password, constants.user.group.PASSENGER);
+    const { group } = user;
+    res.json({ username, group });
+  } catch (e) {
+    next(e);
   }
+};
 
-  res.status(401);
-
-  return res.send('Wrong username or password');
+const loginPost = async (req, res, next) => {
+  try {
+    const { _id, username, group } = req.user;
+    const accessToken = await jwt.sign({ _id, username, group }, process.env.JWT_SECRET, JWT_OPTIONS);
+    res.json({ accessToken });
+  } catch (e) {
+    next(e);
+  }
 };
 
 module.exports = {
+  signupPost,
   loginPost,
 };

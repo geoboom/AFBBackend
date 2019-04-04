@@ -18,10 +18,6 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    validate: {
-      validator: v => v.length >= 6,
-      message: 'Password must be at least 6 characters long.',
-    },
     required: true,
   },
   group: {
@@ -74,6 +70,10 @@ userSchema.statics.getAuthenticated = async function(username, password) {
 userSchema.pre('save', function(next) {
   const user = this;
   if (!user.isModified('password')) { return next(); }
+
+  if (!/^[a-zA-Z0-9_-]{6,64}$/.test(user.password)) {
+    throw new ApiError('Password must be at least 6 characters long.', 500);
+  }
 
   bcrypt.genSalt(SALT_WORK_FACTOR, function(err, salt) {
     if (err) return next(err);

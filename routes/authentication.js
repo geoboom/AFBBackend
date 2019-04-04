@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.post('/signup', signupPost);
 router.post(
-  '/login',
+  '/signin',
   passport.authenticate('local', { session: false }),
   loginPost,
 );

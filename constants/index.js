@@ -1,17 +1,5 @@
-const users = [
-  {
-    username: 'user',
-    password: '123',
-    type: 'Passenger',
-  },
-  {
-    username: 'driver',
-    password: '123',
-    type: 'Driver',
-  },
-];
-
 const trip = {
+  DATE_FORMAT: 'DD/MM/YYYY',
   types: {
     SCHEDULED: 'Scheduled',
     ADDITIONAL: 'Additional',
@@ -41,8 +29,15 @@ const user = {
   },
 };
 
+const socketRoutes = {
+  TICKET_APPROVE: 'ticket.approve',
+  TRIP_START: 'trip.start',
+  TRIP_END: 'trip.end',
+  TRIP_INITIALIZE: 'trip.initialize',
+};
+
 module.exports = {
-  users,
+  socketRoutes,
   trip,
   ticket,
   user,

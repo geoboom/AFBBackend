@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const { DB_USER, DB_PASS } = process.env;
-const CONNECTION_URL = `mongodb://${DB_USER}:${DB_PASS}@ds155086.mlab.com:55086/adoc_ferry_booking-test2`;
-// const CONNECTION_URL = `mongodb://${DB_USER}:${DB_PASS}@ds155684.mlab.com:55684/adoc_ferry_booking-test`;
+// const CONNECTION_URL = `mongodb://${DB_USER}:${DB_PASS}@ds155086.mlab.com:55086/adoc_ferry_booking-test2`;
+const CONNECTION_URL = `mongodb://${DB_USER}:${DB_PASS}@ds155684.mlab.com:55684/adoc_ferry_booking-test`;
 
 const dbConn = () => {
   mongoose.Promise = global.Promise;

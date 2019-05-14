@@ -1,15 +1,22 @@
 const { user: { group: { PASSENGER, DRIVER, ADMIN } } } = require('../constants');
 
-export const userList = {
+const userList = {
   [PASSENGER]: {},
   [DRIVER]: {},
   [ADMIN]: {},
 };
 
-export const registerPresence = (user, socketId) => {
+const registerPresence = (user, socketId) => {
   userList[user.group][user._id] = socketId;
+  console.log(userList);
 };
 
-export const unregisterPresence = (user) => {
+ const unregisterPresence = (user) => {
   userList[user.group][user._id] = null;
 };
+
+ module.exports = {
+   userList,
+   registerPresence,
+   unregisterPresence,
+ };

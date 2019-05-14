@@ -7,10 +7,46 @@ const { getCurrTripDate, getCurrTripDateString } = require('../helpers/helperFun
 const constants = require('../constants');
 const { userList } = require('../helpers/userList');
 
+const {
+  socketRoutes: {
+    TICKET_APPROVE,
+    TRIPS_INITIALIZE,
+    TRIP_START,
+    TRIP_END,
+  },
+} = constants;
 const dateFormat = 'DD/MM/YYYY';
 const timeFormat = 'HH:mm:ss';
 const startTime = '00:00:00';
 const endTime = '10:00:00';
+
+const getDriverTripHistory = async (req, res, next) => {
+  const { _id: userId } = req.user;
+  try {
+    const trips = await Trip.find({ completedByDriver: userId }).exec();
+    res.json({ trips });
+  } catch (e) {
+    next(e);
+  }
+};
+
+const getCurrentTrip = async (req, res, next) => {
+  try {
+    const tripDateString = getCurrTripDateString();
+    const activeTrip = await Trip.findOne({
+      tripDateString,
+      status: constants.trip.statuses.IN_PROGRESS,
+    }).exec();
+    let tripNumber = null;
+    if (activeTrip) tripNumber = activeTrip.tripNumber;
+
+    res.json({
+      currTrip: tripNumber,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
 
 const getCurrentTripDate = (req, res, next) => {
   try {
@@ -53,16 +89,7 @@ const getCurrentTrips = async (req, res, next) => {
       if (res1.length > 0) return res.json({ trips: res1 });
     }
 
-    const trips = await Trip
-      .find({ tripDateString: tmrDate })
-      .populate('expectedPassengers')
-      .populate('passengers')
-      .exec();
-
-    for (let i = 0; i < trips.length; i += 1) {
-      trips[i].expectedPassengers = trips[i].expectedPassengers.map(({ _id, username, group }) => ({ _id, username, group }));
-      trips[i].passengers = trips[i].passengers.map(({ _id, username, group }) => ({ _id, username, group }));
-    }
+    const trips = await Trip.find({ tripDateString: tmrDate }).exec();
 
     return res.json({
       trips,
@@ -73,9 +100,15 @@ const getCurrentTrips = async (req, res, next) => {
 };
 
 const initializeTrips = async (req, res, next) => {
+  const { _id: userId } = req.user;
+  const { vehicleId } = req.body;
+
   try {
-    const { vehicleId } = req.body;
-    const trips = await Trip.initializeTrips(vehicleId);
+    const trips = await Trip.initializeTrips(vehicleId, userId);
+    req
+      .io
+      .to(constants.user.group.PASSENGER)
+      .emit(TRIPS_INITIALIZE);
     res.json({ trips });
   } catch(e) {
     next(e);
@@ -83,10 +116,17 @@ const initializeTrips = async (req, res, next) => {
 };
 
 const setTripStatus = async (req, res, next) => {
+  const { _id: userId } = req.user;
+  const { _id, status } = req.body;
   try {
-    const { _id, status } = req.body;
     const trip = await Trip.findOne({ _id }).exec();
-    const updated = await trip.setTripStatus(status);
+    const updated = await trip.setTripStatus(status, userId);
+    if (status === constants.trip.statuses.IN_PROGRESS) {
+      req.io.to(constants.user.group.PASSENGER).emit(TRIP_START, { currTrip: trip.tripNumber });
+    }
+    if (status === constants.trip.statuses.COMPLETED || status === constants.trip.statuses.CANCELLED) {
+      req.io.to(constants.user.group.PASSENGER).emit(TRIP_END);
+    }
     res.json({ trip: updated });
   } catch (e) {
     console.log(e);
@@ -95,15 +135,13 @@ const setTripStatus = async (req, res, next) => {
 };
 
 const approveTicket = async (req, res, next) => {
+  const { ticketId, tripId } = req.body;
   try {
-    const { ticketId, tripId } = req.body;
     const { userId, trip } = await Ticket.approveTicket(ticketId, tripId);
     req
       .io
       .to(userList[constants.user.group.PASSENGER][userId])
-      .emit('path', {
-
-      });
+      .emit(TICKET_APPROVE);
     res.json({ trip });
   } catch (e) {
     console.log(e);
@@ -112,8 +150,10 @@ const approveTicket = async (req, res, next) => {
 };
 
 const addAdditionalTrip = async (req, res, next) => {
+  const { _id: userId } = req.user;
+  const tripDateString = getCurrTripDateString();
+
   try {
-    const tripDateString = getCurrTripDateString();
     const firstTrip = await Trip.findOne({
       tripDateString,
       tripNumber: 1,
@@ -122,6 +162,7 @@ const addAdditionalTrip = async (req, res, next) => {
     const trip = await Trip.addTrip(
       getCurrTripDate(),
       constants.trip.types.ADDITIONAL,
+      userId,
       vehicleId,
     );
     const trips = await Trip.find({ tripDateString }).exec();
@@ -133,7 +174,9 @@ const addAdditionalTrip = async (req, res, next) => {
 };
 
 module.exports = {
+  getDriverTripHistory,
   approveTicket,
+  getCurrentTrip,
   getCurrentTripDate,
   deleteAllTrips,
   getTrips,

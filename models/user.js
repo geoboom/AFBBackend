@@ -20,6 +20,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  firstName: {
+    type: String,
+  },
+  lastName: {
+    type: String,
+  },
   group: {
     type: String,
     enum: Object.values(constants.user.group),

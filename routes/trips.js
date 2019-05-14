@@ -2,7 +2,9 @@ const express = require('express');
 const passport = require('passport');
 
 const {
+  getDriverTripHistory,
   approveTicket,
+  getCurrentTrip,
   getCurrentTripDate,
   deleteAllTrips,
   getTrips,
@@ -15,6 +17,8 @@ const {
 const router = express.Router();
 
 const routerGets = [
+  { route: '/getDriverTripHistory', method: getDriverTripHistory },
+  { route: '/getCurrentTrip', method: getCurrentTrip },
   { route: '/getCurrentTripDate', method: getCurrentTripDate },
   { route: '/deleteAllTrips', method: deleteAllTrips },
   { route: '/getTrips', method: getTrips },

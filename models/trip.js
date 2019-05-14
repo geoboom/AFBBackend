@@ -6,6 +6,11 @@ const constants = require('../constants');
 const { getCurrTripDate, getCurrTripDateString } = require('../helpers/helperFunctions');
 
 const tripSchema = new mongoose.Schema({
+  location: {
+    type: String,
+    default: 'HQ ADOC',
+    required: true,
+  },
   tripNumber: {
     type: Number,
     required: true,
@@ -37,11 +42,20 @@ const tripSchema = new mongoose.Schema({
     required: true,
   },
   vehicleId: {
-    type: Number,
+    type: String,
     required: true,
   },
   capacity: {
     type: Number,
+    required: true,
+  },
+  completedByDriver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  addedByDriver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
   },
   expectedPassengers: [{
@@ -54,7 +68,11 @@ const tripSchema = new mongoose.Schema({
   }],
 });
 
-tripSchema.statics.initializeTrips = async function(vehicleId) {
+tripSchema.statics.initializeTrips = async function(vehicleId, userId) {
+  const vehicle = constants.vehicleList
+    .find(({ vehicleId: cdtId }) => cdtId === vehicleId);
+  if (!vehicle) throw new ApiError('Vehicle not found', 404);
+
   const tripDate = getCurrTripDate();
   const tripDateString = getCurrTripDateString();
   const trips = await this.find({ tripDateString }).exec();
@@ -62,14 +80,14 @@ tripSchema.statics.initializeTrips = async function(vehicleId) {
     throw new ApiError(`Trips for ${tripDateString} exist.`);
 
   return Promise.all([
-    this.addTrip(tripDate, constants.trip.types.SCHEDULED, vehicleId, 1),
-    this.addTrip(tripDate, constants.trip.types.SCHEDULED, vehicleId, 2),
-    this.addTrip(tripDate, constants.trip.types.SCHEDULED, vehicleId, 3),
-    this.addTrip(tripDate, constants.trip.types.SCHEDULED, vehicleId, 4),
+    this.addTrip(tripDate, constants.trip.types.SCHEDULED, userId, vehicleId, 1),
+    this.addTrip(tripDate, constants.trip.types.SCHEDULED, userId, vehicleId, 2),
+    this.addTrip(tripDate, constants.trip.types.SCHEDULED, userId, vehicleId, 3),
+    this.addTrip(tripDate, constants.trip.types.SCHEDULED, userId, vehicleId, 4),
   ]);
 };
 
-tripSchema.statics.addTrip = async function(tripDate, type, vehicleId, tripNumber = null) {
+tripSchema.statics.addTrip = async function(tripDate, type, addedByDriver, vehicleId, tripNumber = null) {
   const tripDateString = moment(tripDate).format(constants.trip.DATE_FORMAT);
   const trips = await this.find({
     tripDateString,
@@ -79,13 +97,15 @@ tripSchema.statics.addTrip = async function(tripDate, type, vehicleId, tripNumbe
     tripDate,
     tripDateString,
     type,
+    addedByDriver,
     vehicleId,
-    capacity: vehicleId,
+    capacity: constants.vehicleList
+      .find(({ vehicleId: cdtId }) => cdtId === vehicleId).capacity,
   });
   return newTrip.save();
 };
 
-tripSchema.methods.setTripStatus = async function(status) {
+tripSchema.methods.setTripStatus = async function(status, userId) {
   this.status = status;
   switch (status) {
     case constants.trip.statuses.IN_PROGRESS:
@@ -93,6 +113,7 @@ tripSchema.methods.setTripStatus = async function(status) {
       break;
     case constants.trip.statuses.COMPLETED:
       this.tripEnd = Date.now();
+      this.completedByDriver = userId;
       break;
     case constants.trip.statuses.CANCELLED:
       this.tripStart = Date.now();
@@ -103,6 +124,17 @@ tripSchema.methods.setTripStatus = async function(status) {
   }
   return this.save();
 };
+
+tripSchema.post('find', async function(docs) {
+  for (let doc of docs) {
+    await doc
+      .populate('addedByDriver', '_id username group')
+      .populate('completedByDriver', '_id username group')
+      .populate('passengers', '_id username group')
+      .populate('expectedPassengers', '_id username group')
+      .execPopulate();
+  }
+});
 
 const Trip = mongoose.model('Trip', tripSchema);
 module.exports = Trip;

@@ -67,11 +67,15 @@ const bookTicket = async (req, res, next) => {
     const tripType = tripNumber === constants.trip.types.ADDITIONAL
       ? constants.trip.types.ADDITIONAL : constants.trip.types.SCHEDULED;
 
+
     const currTripDateString = getCurrTripDateString();
 
     const ticket = await Ticket.bookTicket(userId, tripType, currTripDateString, tripNumber);
+    req.io.to(constants.user.group.DRIVER).emit(constants.socketRoutes.TICKET_BOOKED);
+    req.io.to(constants.user.group.PASSENGER).emit(constants.socketRoutes.TICKET_BOOKED);
     res.json({ ticket });
   } catch(e) {
+    console.log(e);
     next(e);
   }
 };
@@ -80,6 +84,8 @@ const cancelTicket = async (req, res, next) => {
   try {
     const { _id } = req.body;
     const ticket = await Ticket.cancelTicket(_id);
+    req.io.to(constants.user.group.DRIVER).emit(constants.socketRoutes.TICKET_BOOKED);
+    req.io.to(constants.user.group.PASSENGER).emit(constants.socketRoutes.TICKET_BOOKED);
     res.json({ ticket });
   } catch (e) {
     console.log(e);

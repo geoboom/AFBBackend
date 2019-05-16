@@ -99,9 +99,11 @@ const lookupTicket = async (req, res, next) => {
     const tripDateString = getCurrTripDateString();
     const ticket = await Ticket.findOne({ ticketCode, tripDateString }).populate('userId').lean().exec();
     if (ticket) {
-      const { username, _id } = ticket.userId;
+      const { username, firstName, lastName, _id } = ticket.userId;
       ticket.userId = _id;
       ticket.username = username;
+      ticket.firstName = firstName;
+      ticket.lastName = lastName;
     }
     res.json({ ticket });
   } catch(e) {

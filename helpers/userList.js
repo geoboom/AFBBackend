@@ -7,12 +7,12 @@ const userList = {
 };
 
 const registerPresence = (user, socketId) => {
-  userList[user.group][user._id] = socketId;
+  userList[user.group][user.userId] = socketId;
   console.log(userList);
 };
 
  const unregisterPresence = (user) => {
-  userList[user.group][user._id] = null;
+  userList[user.group][user.userId] = null;
 };
 
  module.exports = {

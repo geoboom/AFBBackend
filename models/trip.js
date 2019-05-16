@@ -128,10 +128,10 @@ tripSchema.methods.setTripStatus = async function(status, userId) {
 tripSchema.post('find', async function(docs) {
   for (let doc of docs) {
     await doc
-      .populate('addedByDriver', '_id username group')
-      .populate('completedByDriver', '_id username group')
-      .populate('passengers', '_id username group')
-      .populate('expectedPassengers', '_id username group')
+      .populate('addedByDriver', '_id username group firstName lastName')
+      .populate('completedByDriver', '_id username group firstName lastName')
+      .populate('passengers', '_id username group firstName lastName')
+      .populate('expectedPassengers', '_id username group firstName lastName')
       .execPopulate();
   }
 });

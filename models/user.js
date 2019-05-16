@@ -46,11 +46,13 @@ userSchema.methods.comparePassword = function(cdtPassword) {
   return bcrypt.compare(cdtPassword, this.password);
 };
 
-userSchema.statics.createAccount = async function(username, password, group) {
+userSchema.statics.createAccount = async function(firstName, lastName, username, password, group) {
   const user = await this.findOne({ username }).exec();
   if (user) throw new ApiError('Username exists.', 409);
 
   const newUser = new this({
+    firstName,
+    lastName,
     username,
     password,
     group,

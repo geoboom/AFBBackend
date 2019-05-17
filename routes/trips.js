@@ -19,7 +19,6 @@ const router = express.Router();
 const routerGets = [
   { route: '/getDriverTripHistory', method: getDriverTripHistory },
   { route: '/getCurrentTrip', method: getCurrentTrip },
-  { route: '/getCurrentTripDate', method: getCurrentTripDate },
   { route: '/deleteAllTrips', method: deleteAllTrips },
   { route: '/getTrips', method: getTrips },
   { route: '/getCurrentTrips', method: getCurrentTrips },
@@ -31,6 +30,11 @@ const routerPosts = [
   { route: '/setStatus', method: setTripStatus },
   { route: '/addAdditional', method: addAdditionalTrip },
 ];
+
+router.get(
+  '/getCurrentTripDate',
+  getCurrentTripDate,
+);
 
 routerGets.forEach(({ route, method }) => {
   router.get(route, passport.authenticate('jwt', { session: false }), method);

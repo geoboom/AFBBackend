@@ -53,8 +53,7 @@ const getCurrentTripDate = (req, res, next) => {
     const currTripDate = getCurrTripDateString();
     res.json({
       currTripDate,
-      test1: moment().utcOffset('+0800'),
-      test2: moment(moment().utcOffset('+0800'), timeFormat),
+      test1: moment(),
     });
   } catch (e) {
     next(e);

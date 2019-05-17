@@ -6,7 +6,7 @@ const startTime = '00:00:00';
 const endTime = '10:00:00';
 
 const getCurrTripDate = () => (
-  moment(moment().utcOffset('+0800'), timeFormat)
+  moment(moment(), timeFormat)
     .isBetween(moment(startTime, timeFormat), moment(endTime, timeFormat))
     ? moment() : moment().add(1, 'd')
 );

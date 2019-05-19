@@ -14,6 +14,20 @@ const {
     TRIP_START,
     TRIP_END,
   },
+  ticket: {
+    statuses: {
+      VALID,
+    }
+  },
+  trip: {
+    types: {
+      SCHEDULED,
+      ADDITIONAL,
+    },
+    statuses: {
+      COMPLETED,
+    },
+  },
 } = constants;
 const dateFormat = 'DD/MM/YYYY';
 const timeFormat = 'HH:mm:ss';
@@ -25,6 +39,28 @@ const getDriverTripHistory = async (req, res, next) => {
   try {
     const trips = await Trip.find({ completedByDriver: userId }).exec();
     res.json({ trips });
+  } catch (e) {
+    next(e);
+  }
+};
+
+const getAdditionalPassengers = async (req, res, next) => {
+  try {
+    const tripDateString = getCurrTripDateString();
+    let additionalPassengers = (await Ticket.find({
+      tripDateString, status: VALID, tripType: ADDITIONAL,
+    }).exec()).length;
+    (await Trip.find({
+      tripDateString, status: COMPLETED, type: SCHEDULED,
+    })).forEach(({ expectedPassengers }) => {
+      expectedPassengers.forEach(({ ticketStatus }) => {
+        if (ticketStatus === VALID) additionalPassengers += 1;
+      });
+    });
+    console.log(additionalPassengers);
+    res.json({
+      additionalPassengers,
+    });
   } catch (e) {
     next(e);
   }
@@ -60,10 +96,13 @@ const getCurrentTripDate = (req, res, next) => {
   }
 };
 
-const deleteAllTrips = async (req, res, next) => {
+const deleteTrips = async (req, res, next) => {
   try {
-    await Trip.deleteMany().exec();
-    await Ticket.deleteMany().exec();
+    const { _id } = req.query;
+    if (_id === '*') {
+      await Trip.deleteMany().exec();
+      await Ticket.deleteMany().exec();
+    }
     res.end();
   } catch(e) {
     next(e);
@@ -177,9 +216,10 @@ const addAdditionalTrip = async (req, res, next) => {
 module.exports = {
   getDriverTripHistory,
   approveTicket,
+  getAdditionalPassengers,
   getCurrentTrip,
   getCurrentTripDate,
-  deleteAllTrips,
+  deleteTrips,
   getTrips,
   getCurrentTrips,
   initializeTrips,

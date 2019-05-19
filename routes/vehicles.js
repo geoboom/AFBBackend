@@ -8,7 +8,7 @@ const {
 const router = express.Router();
 
 const routerGets = [
-  { route: '/getVehicles', method: getVehicles },
+  { route: '', method: getVehicles },
 ];
 
 routerGets.forEach(({ route, method }) => {

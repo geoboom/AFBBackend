@@ -72,7 +72,7 @@ const bookTicket = async (req, res, next) => {
 
     const ticket = await Ticket.bookTicket(userId, tripType, currTripDateString, tripNumber);
     req.io.to(constants.user.group.DRIVER).emit(constants.socketRoutes.TICKET_BOOKED);
-    req.io.to(constants.user.group.PASSENGER).emit(constants.socketRoutes.TICKET_BOOKED);
+    // req.io.to(constants.user.group.PASSENGER).emit(constants.socketRoutes.TICKET_BOOKED);
     res.json({ ticket });
   } catch(e) {
     console.log(e);
@@ -80,12 +80,13 @@ const bookTicket = async (req, res, next) => {
   }
 };
 
-const cancelTicket = async (req, res, next) => {
+const cancelMyTicket = async (req, res, next) => {
   try {
-    const { _id } = req.body;
-    const ticket = await Ticket.cancelTicket(_id);
+    console.log('test');
+    const { _id: userId } = req.user;
+    const ticket = await Ticket.cancelMyTicket(userId);
     req.io.to(constants.user.group.DRIVER).emit(constants.socketRoutes.TICKET_BOOKED);
-    req.io.to(constants.user.group.PASSENGER).emit(constants.socketRoutes.TICKET_BOOKED);
+    // req.io.to(constants.user.group.PASSENGER).emit(constants.socketRoutes.TICKET_BOOKED);
     res.json({ ticket });
   } catch (e) {
     console.log(e);
@@ -129,6 +130,6 @@ module.exports = {
   getCurrentTicket,
   getAvailableTickets,
   bookTicket,
-  cancelTicket,
+  cancelMyTicket,
   getPassengerTicketHistory,
 };

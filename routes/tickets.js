@@ -7,21 +7,24 @@ const {
   getCurrentTicket,
   getAvailableTickets,
   bookTicket,
-  cancelTicket,
+  cancelMyTicket,
 } = require('../controllers/tickets');
 
 const router = express.Router();
 
 const routerGets = [
-  { route: '/getPassengerTicketHistory', method: getPassengerTicketHistory },
-  { route: '/lookupTicket', method: lookupTicket },
-  { route: '/getCurrentTicket', method: getCurrentTicket },
-  { route: '/getAvailableTickets', method: getAvailableTickets },
+  { route: '/my-history', method: getPassengerTicketHistory },
+  { route: '/lookup', method: lookupTicket },
+  { route: '/my-active', method: getCurrentTicket },
+  { route: '/available', method: getAvailableTickets },
 ];
 
 const routerPosts = [
-  { route: '/bookTicket', method: bookTicket },
-  { route: '/cancelTicket', method: cancelTicket },
+  { route: '/book', method: bookTicket },
+];
+
+const routerDeletes = [
+  { route: '/my-ticket', method: cancelMyTicket },
 ];
 
 routerGets.forEach(({ route, method }) => {
@@ -30,6 +33,10 @@ routerGets.forEach(({ route, method }) => {
 
 routerPosts.forEach(({ route, method }) => {
   router.post(route, passport.authenticate('jwt', { session: false }), method);
+});
+
+routerDeletes.forEach(({ route, method }) => {
+  router.delete(route, passport.authenticate('jwt', { session: false }), method);
 });
 
 module.exports = router;

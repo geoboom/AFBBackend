@@ -6,9 +6,10 @@ const {
   approveTicket,
   getCurrentTrip,
   getCurrentTripDate,
-  deleteAllTrips,
+  deleteTrips,
   getTrips,
   getCurrentTrips,
+  getAdditionalPassengers,
   initializeTrips,
   setTripStatus,
   addAdditionalTrip,
@@ -17,22 +18,29 @@ const {
 const router = express.Router();
 
 const routerGets = [
-  { route: '/getDriverTripHistory', method: getDriverTripHistory },
-  { route: '/getCurrentTrip', method: getCurrentTrip },
-  { route: '/deleteAllTrips', method: deleteAllTrips },
+  { route: '/my-history', method: getDriverTripHistory },
+  { route: '/active', method: getCurrentTrip },
+  { route: '/today', method: getCurrentTrips },
+  { route: '/additional-passengers', method: getAdditionalPassengers },
   { route: '/getTrips', method: getTrips },
-  { route: '/getCurrentTrips', method: getCurrentTrips },
 ];
 
 const routerPosts = [
-  { route: '/approveTicket', method: approveTicket },
-  { route: '/initializeTrips', method: initializeTrips },
-  { route: '/setStatus', method: setTripStatus },
-  { route: '/addAdditional', method: addAdditionalTrip },
+  { route: '/approve-ticket', method: approveTicket },
+  { route: '/initialize', method: initializeTrips },
+  { route: '/additional', method: addAdditionalTrip },
+];
+
+const routerPuts = [
+  { route: '/status', method: setTripStatus },
+];
+
+const routerDeletes = [
+  { route: '', method: deleteTrips },
 ];
 
 router.get(
-  '/getCurrentTripDate',
+  '/current-date',
   getCurrentTripDate,
 );
 
@@ -42,6 +50,14 @@ routerGets.forEach(({ route, method }) => {
 
 routerPosts.forEach(({ route, method }) => {
   router.post(route, passport.authenticate('jwt', { session: false }), method);
+});
+
+routerPuts.forEach(({ route, method }) => {
+  router.put(route, passport.authenticate('jwt', { session: false }), method);
+});
+
+routerDeletes.forEach(({ route, method }) => {
+  router.delete(route, passport.authenticate('jwt', { session: false }), method);
 });
 
 module.exports = router;

@@ -72,13 +72,34 @@ const ticketSchema = new mongoose.Schema({
   },
 });
 
+
+ticketSchema.statics.cancelMyTicket = async function(userId) {
+  const ticket = await this.findOne({
+    userId,
+    status: constants.ticket.statuses.VALID,
+  }).exec();
+  if (!ticket) throw new ApiError('Ticket not found.', 404);
+  const { expectedTripId, tripType } = ticket;
+  if (tripType === constants.trip.types.SCHEDULED) {
+    // remove expected passenger
+    const trip = await Trip.findOne({ _id: expectedTripId }).exec();
+    trip.expectedPassengers = trip.expectedPassengers
+      .filter(({ user }) => user.toString() !== userId.toString());
+    trip.save();
+  }
+  ticket.status = constants.ticket.statuses.CANCELLED;
+  ticket.statusTime = Date.now();
+  return ticket.save();
+};
+
 ticketSchema.statics.cancelTicket = async function(_id) {
   const ticket = await this.findOne({ _id }).exec();
   if (!ticket) throw new ApiError('Ticket not found.', 404);
   const { expectedTripId, userId, tripType } = ticket;
   if (tripType === constants.trip.types.SCHEDULED) {
     const trip = await Trip.findOne({ _id: expectedTripId }).exec();
-    trip.expectedPassengers = trip.expectedPassengers.filter((curr) => curr.toString() !== userId.toString());
+    trip.expectedPassengers = trip.expectedPassengers
+      .filter(({ user }) => user.toString() !== userId.toString());
     trip.save();
   }
   ticket.status = constants.ticket.statuses.CANCELLED;
@@ -120,7 +141,7 @@ ticketSchema.statics.bookTicket = async function(userId, tripType, tripDateStrin
   if (status === constants.trip.statuses.COMPLETED || expectedPassengers >= capacity)
     throw new ApiError('Ticket unavailable for booking.', 500);
 
-  trip.expectedPassengers.push(userId);
+  trip.expectedPassengers.push({ user: userId, ticketStatus: constants.ticket.statuses.VALID });
   trip.save();
   const newTicket = new this({
     ticketCode,
@@ -141,30 +162,48 @@ ticketSchema.statics.approveTicket = async function(ticketId, tripId) {
   }).exec();
   if (!ticket) throw new ApiError('No such ticket.', 404);
 
-  const trip = await Trip.findOne({
+  const thisTrip = await Trip.findOne({
     _id: tripId,
     status: constants.trip.statuses.IN_PROGRESS,
   }).exec();
-  if (!trip) throw new ApiError('No such trip.', 404);
+  if (!thisTrip) throw new ApiError('No such trip.', 404);
 
-  const { tripNumber } = trip;
-  const { userId } = ticket;
+  const { tripNumber } = thisTrip;
+  const { userId, expectedTripId } = ticket;
+
   ticket.status = constants.ticket.statuses.REDEEMED;
   ticket.statusTime = Date.now();
   ticket.actualTripId = tripId;
   ticket.tripNumberBoarded = tripNumber;
-  trip.passengers.push(userId);
+
+  thisTrip.passengers.push(userId);
+
+  let tripToSave = thisTrip;
+  if (expectedTripId) {
+    if (expectedTripId !== thisTrip._id) {
+      tripToSave.save();
+      tripToSave = await Trip.findOne({ _id: expectedTripId }).exec();
+    }
+
+    tripToSave.expectedPassengers = tripToSave.expectedPassengers.map((p) => {
+      if (p.user.toString() === userId.toString()) {
+        p['ticketStatus'] = constants.ticket.statuses.REDEEMED;
+        p['tripNumber'] = tripNumber;
+      }
+      return p;
+    });
+  }
 
   ticket.save();
-  trip.save();
+  tripToSave.save();
 
   const user = await User.findOne({ _id: userId }).exec();
   const { username, group } = user;
   return ({
     userId,
     trip: {
-      ...trip,
-      passengers: trip.passengers.map((passenger) => {
+      ...thisTrip,
+      passengers: thisTrip.passengers.map((passenger) => {
         if (passenger === userId) return ({_id: passenger, username, group});
         return passenger;
       }),

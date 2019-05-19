@@ -58,10 +58,22 @@ const tripSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  expectedPassengers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
+  expectedPassengers: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      ticketStatus: {
+        type: String,
+        enum: Object.values(constants.ticket.statuses),
+        default: constants.ticket.statuses.VALID,
+      },
+      tripNumber: {
+        type: Number,
+      },
+    },
+  ],
   passengers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -99,6 +111,7 @@ tripSchema.statics.addTrip = async function(tripDate, type, addedByDriver, vehic
     type,
     addedByDriver,
     vehicleId,
+    expectedPassengers: [],
     capacity: constants.vehicleList
       .find(({ vehicleId: cdtId }) => cdtId === vehicleId).capacity,
   });
@@ -130,8 +143,8 @@ tripSchema.post('find', async function(docs) {
     await doc
       .populate('addedByDriver', '_id username group firstName lastName')
       .populate('completedByDriver', '_id username group firstName lastName')
+      .populate('expectedPassengers.user', '-password')
       .populate('passengers', '_id username group firstName lastName')
-      .populate('expectedPassengers', '_id username group firstName lastName')
       .execPopulate();
   }
 });

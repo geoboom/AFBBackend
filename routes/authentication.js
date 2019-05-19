@@ -9,7 +9,7 @@ const {
 
 const router = express.Router();
 
-router.post('/verifyToken', verifyTokenPost);
+router.post('/verify-token', verifyTokenPost);
 router.post('/signup', signupPost);
 router.post(
   '/signin',
